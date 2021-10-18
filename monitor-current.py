@@ -1,28 +1,34 @@
 import argparse
 import time
+from typing import List
 import matplotlib.pyplot as plt
 import math
 from SndCaenManager import SndCaenManager
 
+
 def main():
-    parser = argparse.ArgumentParser('Show a live figure of the currents level of the daq boards')
+    parser = argparse.ArgumentParser(
+        'Show a live figure of the currents level of the daq boards')
     #parser.add_argument('mode', type=str, help='Precise the operaton mode (on or off)')
-    parser.add_argument('--daqs', nargs='+', default=None, help='Precise the DAQ boards')
+    parser.add_argument('--daqs',
+                        nargs='+',
+                        default=None,
+                        help='Precise the DAQ boards')
     parser.add_argument('--verbose', '-v', action='store_true')
     args = parser.parse_args()
-    
-    confPath = 'config_SND.toml'   
+
+    confPath = 'config_SND.toml'
     manager = SndCaenManager(confPath)
 
     monitor_current(args.daqs, manager, verbose=args.verbose)
 
+
 def monitor_current(daqs, manager: SndCaenManager, **kwargs):
-    if daqs is None:
-        nb_daqs = 30
-    else:
+    nb_daqs = 30
+    if daqs is not None:
         nb_daqs = len(daqs)
-    x = []
-    currents = [ [] for _ in range(nb_daqs) ]
+    x: List = []
+    currents: List = [[] for _ in range(nb_daqs)]
     lines = []
     compteur = 0
     plt.ion()
@@ -35,30 +41,21 @@ def monitor_current(daqs, manager: SndCaenManager, **kwargs):
             line_temp, = ax.plot(x, currents[i])
             lines.append(line_temp)
     if nb_daqs == 30:
-        print(nb_daqs)
         for i in range(0, nb_daqs):
-            if math.floor(i/10) == 0:
-                print(i)
+            if math.floor(i / 10) == 0:
                 line_temp, = ax.plot(x, currents[i], '-')
-            if math.floor(i/10) == 1:
+            if math.floor(i / 10) == 1:
                 line_temp, = ax.plot(x, currents[i], '--')
-            if math.floor(i/10) == 2:
+            if math.floor(i / 10) == 2:
                 line_temp, = ax.plot(x, currents[i], '.')
-
             lines.append(line_temp)
 
-    legend = []
+    legend = daqs
     if daqs is None:
-        for daq in manager.config['bias']:
-            if daq == 'default':
-                pass
-            else:
-                legend.append(daq)
-    else:
-        legend = daqs
+        legend = [daq for daq in manager.config['bias'] if daq != 'default']
 
     ax.legend(lines, legend)
-    
+
     try:
         while True:
             i = 0
@@ -66,15 +63,15 @@ def monitor_current(daqs, manager: SndCaenManager, **kwargs):
             compteur += 1
             if daqs is None:
                 for daq in manager.config['bias']:
-                    if daq == 'default':
-                        pass
-                    else:
-                        currents[i].append(manager.getChannelParameter('IMon', 'bias', daq))
+                    if daq != 'default':
+                        currents[i].append(
+                            manager.getChannelParameter('IMon', 'bias', daq))
                         lines[i].set_data(x, currents[i])
                         i += 1
             else:
                 for daq in daqs:
-                    currents[i].append(manager.getChannelParameter('IMon', 'bias', daq))
+                    currents[i].append(
+                        manager.getChannelParameter('IMon', 'bias', daq))
                     lines[i].set_data(x, currents[i])
                     i += 1
 
@@ -88,7 +85,6 @@ def monitor_current(daqs, manager: SndCaenManager, **kwargs):
             time.sleep(1)
     except KeyboardInterrupt:
         pass
-
     """
     current = []
     compteur = 0
